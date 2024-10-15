@@ -14,6 +14,7 @@ type MessengerService interface {
 	GetConferenceMessages(conferenceID int64) ([]*domain.Message, error)
 	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
 	CreateConference(usersIDs []int64, name string, createdBy int64, createdAt time.Time) error
+	PostToConference(message *domain.Message) error
 }
 
 type MessengerHandler struct {
@@ -30,6 +31,8 @@ func NewMessengerHandler(service MessengerService, log *zap.Logger) *MessengerHa
 
 func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("messenger/conferences/{id}", handler.getMessages)
+	e.POST("messenger/conferences/{id}", handler.postMessage)
+
 	e.GET("messenger/conferences", handler.getConferences)
 	e.POST("messenger/conferences", handler.createConference)
 	return e
@@ -49,6 +52,22 @@ func (handler *MessengerHandler) getMessages(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, messages)
+}
+
+func (handler *MessengerHandler) postMessage(c echo.Context) error {
+	var message *domain.Message
+	err := json.NewDecoder(c.Request().Body).Decode(message)
+	if err != nil {
+		handler.log.Error("Failed to parse message", zap.Error(err))
+		return c.String(http.StatusBadRequest, "Failed to post message: cannot parse message")
+	}
+
+	err = handler.service.PostToConference(message)
+	if err != nil {
+		handler.log.Error("Failed to post message to conference", zap.Error(err))
+		return c.String(http.StatusInternalServerError, "Failed to post message")
+	}
+	return c.String(http.StatusCreated, "Message posted")
 }
 
 func (handler *MessengerHandler) getConferences(c echo.Context) error {

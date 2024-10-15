@@ -26,11 +26,12 @@ func (storage *MessagesStorage) GetMessagesByConference(id int64) ([]*domain.Mes
 }
 
 func (storage *MessagesStorage) InsertMessage(message *domain.Message) error {
-	_, err := storage.DB.Exec("INSERT INTO messages VALUES ($1, $2, $3, $4)",
+	_, err := storage.DB.Exec("INSERT INTO messages (id, conference_id, user_id, text, sent_at) VALUES ($1, $2, $3, $4, $5)",
 		message.ID,
+		message.ConferenceID,
 		message.UserID,
 		message.Text,
-		message.ConferenceID)
+		message.SentAt)
 
 	return err
 }
