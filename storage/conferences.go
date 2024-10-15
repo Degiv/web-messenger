@@ -31,7 +31,7 @@ func (c *Conferences) GetConferencesByUser(userID int64) ([]*domain.Conference, 
 
 func (c *Conferences) CreateConference(name string, createdBy int64, createdAt time.Time) (int64, error) {
 	const query = `INSERT INTO conferences (name, created_at, created_by) VALUES ($1, $2, $3) RETURNING id;`
-	row := c.DB.QueryRowx(query, &name)
+	row := c.DB.QueryRowx(query, &name, &createdAt, &createdBy)
 	var id int64
 	err := row.Scan(&id)
 	if err != nil {

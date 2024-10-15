@@ -27,7 +27,7 @@ func (u *Users) GetUsersByIDs(userIDs []int64) ([]*domain.User, error) {
 }
 
 func (u *Users) CreateRelationToConference(userID int64, conferenceID int64) error {
-	const query = `INSERT INTO usersConferencesRelation (user_id, confernce_id) VALUES ($1, $2)`
+	const query = `INSERT INTO usersConferencesRelation (user_id, conference_id) VALUES ($1, $2)`
 	_, err := u.DB.Exec(query, userID, conferenceID)
 	return err
 }
