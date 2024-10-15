@@ -9,6 +9,7 @@ import (
 type Conferences interface {
 	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
 	CreateConference(name string, createdBy int64, createdAt time.Time) (int64, error)
+	CreateConferenceMember(userID int64, conferenceID int64, joinedAt time.Time) error
 }
 
 type Messages interface {
@@ -17,7 +18,6 @@ type Messages interface {
 }
 
 type Users interface {
-	CreateRelationToConference(userID int64, conferenceID int64) error
 	GetUsersByIDs(usersIDs []int64) ([]*domain.User, error)
 }
 
@@ -63,7 +63,7 @@ func (service *MessengerService) CreateConference(usersIDs []int64, name string,
 	}
 
 	for _, userID := range usersIDs {
-		err = service.Users.CreateRelationToConference(userID, conferenceID)
+		err = service.Conferences.CreateConferenceMember(userID, conferenceID, createdAt)
 		if err != nil {
 			return fmt.Errorf("creating usersConferencesRelation: %w", err)
 		}
