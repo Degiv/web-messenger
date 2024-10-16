@@ -19,6 +19,7 @@ type Messages interface {
 
 type Users interface {
 	GetUsersByIDs(usersIDs []int64) ([]*domain.User, error)
+	GetUserByID(userID int64) (*domain.User, error)
 }
 
 type MessengerService struct {
@@ -33,6 +34,14 @@ func NewMessenger(users Users, messages Messages, conferences Conferences) *Mess
 		Messages:    messages,
 		Conferences: conferences,
 	}
+}
+
+func (service *MessengerService) GetUserByID(userID int64) (*domain.User, error) {
+	user, err := service.Users.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (service *MessengerService) GetConferenceMessages(userID int64) ([]*domain.Message, error) {

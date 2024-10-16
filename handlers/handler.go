@@ -11,6 +11,7 @@ import (
 )
 
 type MessengerService interface {
+	GetUserByID(userID int64) (*domain.User, error)
 	GetConferenceMessages(conferenceID int64) ([]*domain.Message, error)
 	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
 	CreateConference(usersIDs []int64, name string, createdBy int64, createdAt time.Time) error
@@ -35,7 +36,25 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 
 	e.GET("messenger/conferences", handler.getConferences)
 	e.POST("messenger/conferences", handler.createConference)
+
+	e.GET("messenger/users/{id}", handler.getUser)
 	return e
+}
+
+func (handler *MessengerHandler) getUser(c echo.Context) error {
+	userID, err := strconv.ParseInt(c.QueryParam("id"), 10, 64)
+	if err != nil {
+		handler.log.Error("Wrong ID type", zap.Error(err))
+		return c.String(http.StatusBadRequest, "Wrong ID type")
+	}
+
+	user, err := handler.service.GetUserByID(userID)
+	if err != nil {
+		handler.log.Error("Failed to get user by ID", zap.Error(err))
+		return c.String(http.StatusInternalServerError, "Failed to get user")
+	}
+
+	return c.JSON(http.StatusOK, user)
 }
 
 func (handler *MessengerHandler) getMessages(c echo.Context) error {

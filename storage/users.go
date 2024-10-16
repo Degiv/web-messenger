@@ -25,3 +25,13 @@ func (u *Users) GetUsersByIDs(userIDs []int64) ([]*domain.User, error) {
 
 	return users, nil
 }
+
+func (u *Users) GetUserByID(userID int64) (*domain.User, error) {
+	const query = `SELECT * FROM users WHERE id = $1`
+	var user *domain.User
+	err := u.DB.Get(user, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
