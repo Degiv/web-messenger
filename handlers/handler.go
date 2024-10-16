@@ -38,6 +38,7 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.POST("messenger/conferences", handler.createConference)
 
 	e.GET("messenger/users/{id}", handler.getUser)
+	//e.POST("messenger/users", handler.createUser)
 	return e
 }
 
@@ -113,7 +114,7 @@ func (handler *MessengerHandler) createConference(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Need IDs of users and conference name")
 	}
 
-	err = handler.service.CreateConference(decoded.usersIDs, decoded.name, decoded.createdBy, decoded.createdAt)
+	err = handler.service.CreateConference(decoded.UsersIDs, decoded.Name, decoded.CreatedBy, decoded.CreatedAt)
 	if err != nil {
 		handler.log.Error("Failed to create conference", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to create conference")
