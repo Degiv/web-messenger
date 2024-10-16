@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
-	"messenger/domain"
+	domain2 "messenger/internals/domain"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 type MessengerService interface {
-	GetUserByID(userID int64) (*domain.User, error)
-	GetConferenceMessages(conferenceID int64) ([]*domain.Message, error)
-	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
+	GetUserByID(userID int64) (*domain2.User, error)
+	GetConferenceMessages(conferenceID int64) ([]*domain2.Message, error)
+	GetConferencesByUser(userID int64) ([]*domain2.Conference, error)
 	CreateConference(usersIDs []int64, name string, createdBy int64, createdAt time.Time) error
-	PostToConference(message *domain.Message) error
+	PostToConference(message *domain2.Message) error
 }
 
 type MessengerHandler struct {
@@ -75,7 +75,7 @@ func (handler *MessengerHandler) getMessages(c echo.Context) error {
 }
 
 func (handler *MessengerHandler) postMessage(c echo.Context) error {
-	var message *domain.Message
+	var message *domain2.Message
 	err := json.NewDecoder(c.Request().Body).Decode(message)
 	if err != nil {
 		handler.log.Error("Failed to parse message", zap.Error(err))

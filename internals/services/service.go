@@ -2,24 +2,24 @@ package services
 
 import (
 	"fmt"
-	"messenger/domain"
+	domain2 "messenger/internals/domain"
 	"time"
 )
 
 type Conferences interface {
-	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
+	GetConferencesByUser(userID int64) ([]*domain2.Conference, error)
 	CreateConference(name string, createdBy int64, createdAt time.Time) (int64, error)
 	CreateConferenceMember(userID int64, conferenceID int64, joinedAt time.Time) error
 }
 
 type Messages interface {
-	GetMessagesByConference(id int64) ([]*domain.Message, error)
-	InsertMessage(message *domain.Message) error
+	GetMessagesByConference(id int64) ([]*domain2.Message, error)
+	InsertMessage(message *domain2.Message) error
 }
 
 type Users interface {
-	GetUsersByIDs(usersIDs []int64) ([]*domain.User, error)
-	GetUserByID(userID int64) (*domain.User, error)
+	GetUsersByIDs(usersIDs []int64) ([]*domain2.User, error)
+	GetUserByID(userID int64) (*domain2.User, error)
 }
 
 type MessengerService struct {
@@ -36,7 +36,7 @@ func NewMessenger(users Users, messages Messages, conferences Conferences) *Mess
 	}
 }
 
-func (service *MessengerService) GetUserByID(userID int64) (*domain.User, error) {
+func (service *MessengerService) GetUserByID(userID int64) (*domain2.User, error) {
 	user, err := service.Users.GetUserByID(userID)
 	if err != nil {
 		return nil, err
@@ -44,15 +44,15 @@ func (service *MessengerService) GetUserByID(userID int64) (*domain.User, error)
 	return user, nil
 }
 
-func (service *MessengerService) GetConferenceMessages(userID int64) ([]*domain.Message, error) {
+func (service *MessengerService) GetConferenceMessages(userID int64) ([]*domain2.Message, error) {
 	return service.Messages.GetMessagesByConference(userID)
 }
 
-func (service *MessengerService) PostToConference(message *domain.Message) error {
+func (service *MessengerService) PostToConference(message *domain2.Message) error {
 	return service.Messages.InsertMessage(message)
 }
 
-func (service *MessengerService) GetConferencesByUser(userID int64) ([]*domain.Conference, error) {
+func (service *MessengerService) GetConferencesByUser(userID int64) ([]*domain2.Conference, error) {
 	return service.Conferences.GetConferencesByUser(userID)
 }
 

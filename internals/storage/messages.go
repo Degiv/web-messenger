@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/jmoiron/sqlx"
-	"messenger/domain"
+	"messenger/internals/domain"
 )
 
 type MessagesStorage struct {

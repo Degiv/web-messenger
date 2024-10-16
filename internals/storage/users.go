@@ -3,7 +3,7 @@ package storage
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"messenger/domain"
+	"messenger/internals/domain"
 )
 
 type Users struct {

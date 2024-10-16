@@ -7,9 +7,9 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"messenger/handlers"
-	"messenger/services"
-	"messenger/storage"
+	"messenger/internals/handlers"
+	"messenger/internals/services"
+	storage2 "messenger/internals/storage"
 )
 
 func NewLogger() *zap.Logger {
@@ -30,9 +30,9 @@ func main() {
 		log.Error("Failed connect to database", zap.Error(err))
 	}
 
-	users := storage.NewUsers(db)
-	messages := storage.NewMessages(db)
-	conferences := storage.NewConferences(db)
+	users := storage2.NewUsers(db)
+	messages := storage2.NewMessages(db)
+	conferences := storage2.NewConferences(db)
 
 	messengerService := services.NewMessenger(users, messages, conferences)
 
