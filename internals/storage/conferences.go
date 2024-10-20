@@ -42,7 +42,7 @@ func (c *Conferences) CreateConference(name string, createdBy int64, createdAt t
 }
 
 func (c *Conferences) CreateConferenceMember(userID int64, conferenceID int64, joinedAt time.Time) error {
-	const query = `INSERT INTO conference_members (user_	id, conference_id, joined_at) VALUES ($1, $2, $3)`
+	const query = `INSERT INTO conference_members (user_id, conference_id, joined_at) VALUES ($1, $2, $3)`
 	_, err := c.DB.Exec(query, &userID, &conferenceID, &joinedAt)
 	return err
 }
