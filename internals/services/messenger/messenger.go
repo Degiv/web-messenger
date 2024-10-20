@@ -1,4 +1,4 @@
-package services
+package messenger
 
 import (
 	"fmt"
