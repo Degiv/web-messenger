@@ -10,5 +10,4 @@ const secret = "secret"
 
 func Authorization(next echo.HandlerFunc) echo.HandlerFunc {
 	return echojwt.JWT([]byte(secret))(next)
-	echojwt.Config{}
 }
