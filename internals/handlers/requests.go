@@ -8,3 +8,8 @@ type createConferenceRequest struct {
 	CreatedBy int64     `json:"created_by"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}

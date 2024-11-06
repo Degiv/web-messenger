@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"messenger/internals/domain"
+	"messenger/pkg/jwt"
 	"net/http"
 	"strconv"
 	"time"
@@ -31,6 +32,7 @@ func NewMessengerHandler(service MessengerService, log *zap.Logger) *MessengerHa
 }
 
 func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
+	e.Group("messenger", jwt.Authorization)
 	e.GET("messenger/conferences/{id}", handler.getMessages)
 	e.POST("messenger/conferences/{id}", handler.postMessage)
 
@@ -40,6 +42,36 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("messenger/users/{id}", handler.getUser)
 	//e.POST("messenger/users", handler.createUser)
 	return e
+}
+
+func (handler *MessengerHandler) login(c echo.Context) error {
+	var decoded loginRequest
+	
+	err := json.NewDecoder(c.Request().Body).Decode(&decoded)
+
+	//TODO Check user&password
+
+	// Set custom claims
+	claims := &jwtCustomClaims{
+		"Jon Snow",
+		true,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+		},
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": t,
+	})
 }
 
 func (handler *MessengerHandler) getUser(c echo.Context) error {
