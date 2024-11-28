@@ -2,13 +2,19 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"messenger/internals/domain"
-	"messenger/pkg/jwt"
+	"messenger/internals/services/auth"
+	mycookie "messenger/pkg/cookie"
 	"net/http"
 	"strconv"
 	"time"
+)
+
+const (
+	IDCookieKey = "UserID"
 )
 
 type MessengerService interface {
@@ -19,20 +25,27 @@ type MessengerService interface {
 	PostToConference(message *domain.Message) error
 }
 
-type MessengerHandler struct {
-	service MessengerService
-	log     *zap.Logger
+type AuthService interface {
+	AuthorizeUser(username string, password string) (int64, error)
 }
 
-func NewMessengerHandler(service MessengerService, log *zap.Logger) *MessengerHandler {
+type MessengerHandler struct {
+	messenger MessengerService
+	auth      AuthService
+	log       *zap.Logger
+}
+
+func NewMessengerHandler(messenger MessengerService, auth AuthService, log *zap.Logger) *MessengerHandler {
 	return &MessengerHandler{
-		service: service,
-		log:     log,
+		messenger: messenger,
+		auth:      auth,
+		log:       log,
 	}
 }
 
 func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
-	e.Group("messenger", jwt.Authorization)
+	e.GET("login", handler.login)
+
 	e.GET("messenger/conferences/{id}", handler.getMessages)
 	e.POST("messenger/conferences/{id}", handler.postMessage)
 
@@ -46,32 +59,30 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 
 func (handler *MessengerHandler) login(c echo.Context) error {
 	var decoded loginRequest
-	
+
 	err := json.NewDecoder(c.Request().Body).Decode(&decoded)
-
-	//TODO Check user&password
-
-	// Set custom claims
-	claims := &jwtCustomClaims{
-		"Jon Snow",
-		true,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
-		},
-	}
-
-	// Create token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
 	if err != nil {
-		return err
+		return c.String(http.StatusBadRequest, "No username or password")
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": t,
-	})
+	userID, err := handler.auth.AuthorizeUser(decoded.Username, decoded.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, auth.ErrNoSuchUser) || errors.Is(err, auth.ErrWrongPassword):
+			return c.String(http.StatusUnauthorized, "Wrong username or password")
+		default:
+			handler.log.Error("Failed to authorize user", zap.Error(err))
+			return c.String(http.StatusInternalServerError, "Server error")
+		}
+	}
+
+	cookie := mycookie.CreateCookie(
+		IDCookieKey,
+		strconv.FormatInt(userID, 10),
+		time.Now().Add(24*time.Hour))
+
+	c.SetCookie(cookie)
+	return c.String(http.StatusOK, "Authorized!")
 }
 
 func (handler *MessengerHandler) getUser(c echo.Context) error {
@@ -81,7 +92,7 @@ func (handler *MessengerHandler) getUser(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Wrong ID type")
 	}
 
-	user, err := handler.service.GetUserByID(userID)
+	user, err := handler.messenger.GetUserByID(userID)
 	if err != nil {
 		handler.log.Error("Failed to get user by ID", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to get user")
@@ -97,7 +108,7 @@ func (handler *MessengerHandler) getMessages(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Wrong ID type")
 	}
 
-	messages, err := handler.service.GetConferenceMessages(conferenceID)
+	messages, err := handler.messenger.GetConferenceMessages(conferenceID)
 	if err != nil {
 		handler.log.Error("Failed to get messages by conference ID", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to get messages")
@@ -114,7 +125,7 @@ func (handler *MessengerHandler) postMessage(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Failed to post message: cannot parse message")
 	}
 
-	err = handler.service.PostToConference(message)
+	err = handler.messenger.PostToConference(message)
 	if err != nil {
 		handler.log.Error("Failed to post message to conference", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to post message")
@@ -129,7 +140,7 @@ func (handler *MessengerHandler) getConferences(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Wrong ID type")
 	}
 
-	conferences, err := handler.service.GetConferencesByUser(userID)
+	conferences, err := handler.messenger.GetConferencesByUser(userID)
 	if err != nil {
 		handler.log.Error("Failed to get conferences by user ID", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to get conferences")
@@ -146,7 +157,7 @@ func (handler *MessengerHandler) createConference(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Need IDs of users and conference name")
 	}
 
-	err = handler.service.CreateConference(decoded.UsersIDs, decoded.Name, decoded.CreatedBy, decoded.CreatedAt)
+	err = handler.messenger.CreateConference(decoded.UsersIDs, decoded.Name, decoded.CreatedBy, decoded.CreatedAt)
 	if err != nil {
 		handler.log.Error("Failed to create conference", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to create conference")

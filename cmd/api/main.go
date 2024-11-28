@@ -8,7 +8,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"messenger/internals/handlers"
-	"messenger/internals/services"
+	"messenger/internals/services/auth"
+	"messenger/internals/services/messenger"
 	"messenger/internals/storage"
 )
 
@@ -34,11 +35,12 @@ func main() {
 	messages := storage.NewMessages(db)
 	conferences := storage.NewConferences(db)
 
-	messengerService := services.NewMessenger(users, messages, conferences)
+	messengerService := messenger.NewMessenger(users, messages, conferences)
+	authService := auth.NewAuthService(users)
 
 	e := echo.New()
 	e.Use(middleware.Logger())
-	handler := handlers.NewMessengerHandler(messengerService, log)
+	handler := handlers.NewMessengerHandler(messengerService, authService, log)
 	handler.RegisterRoutes(e)
 
 	err = e.Start(":3000")
