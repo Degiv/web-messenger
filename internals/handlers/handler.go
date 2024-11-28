@@ -115,7 +115,12 @@ func (handler *MessengerHandler) login(c echo.Context) error {
 }
 
 func (handler *MessengerHandler) getUser(c echo.Context) error {
-	userID, err := strconv.ParseInt(c.QueryParam("id"), 10, 64)
+	cookie, err := c.Cookie(IDCookieKey)
+	if err != nil {
+		return err
+	}
+
+	userID, err := strconv.ParseInt(cookie.Value, 10, 64)
 	if err != nil {
 		handler.log.Error("Wrong ID type", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong ID type")
@@ -132,6 +137,7 @@ func (handler *MessengerHandler) getUser(c echo.Context) error {
 
 func (handler *MessengerHandler) getMessages(c echo.Context) error {
 	conferenceID, err := strconv.ParseInt(c.QueryParam("id"), 10, 64)
+
 	if err != nil {
 		handler.log.Error("Wrong ID type", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong ID type")
