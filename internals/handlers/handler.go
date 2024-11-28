@@ -18,6 +18,7 @@ const (
 )
 
 type MessengerService interface {
+	RegisterUser(username string, email string, password string) (bool, int64, error)
 	GetUserByID(userID int64) (*domain.User, error)
 	GetConferenceMessages(conferenceID int64) ([]*domain.Message, error)
 	GetConferencesByUser(userID int64) ([]*domain.Conference, error)
@@ -45,6 +46,7 @@ func NewMessengerHandler(messenger MessengerService, auth AuthService, log *zap.
 
 func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("login", handler.login)
+	e.POST("signin", handler.signIn)
 
 	e.GET("messenger/conferences/{id}", handler.getMessages)
 	e.POST("messenger/conferences/{id}", handler.postMessage)
@@ -53,8 +55,34 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.POST("messenger/conferences", handler.createConference)
 
 	e.GET("messenger/users/{id}", handler.getUser)
-	//e.POST("messenger/users", handler.createUser)
 	return e
+}
+
+func (handler *MessengerHandler) signIn(c echo.Context) error {
+	var decoded signInRequest
+	err := json.NewDecoder(c.Request().Body).Decode(&decoded)
+	if err != nil {
+		handler.log.Error("Bad request", zap.Error(err))
+		return c.String(http.StatusBadRequest, "Wrong user data")
+	}
+
+	ok, id, err := handler.messenger.RegisterUser(decoded.Username, decoded.Email, decoded.Password)
+	if err != nil {
+		handler.log.Error("Failed to sign in", zap.Error(err))
+		return c.String(http.StatusInternalServerError, "ServerError")
+	}
+
+	if !ok {
+		return c.String(http.StatusConflict, "Username already exists")
+	}
+
+	cookie := mycookie.CreateCookie(
+		IDCookieKey,
+		strconv.FormatInt(id, 10),
+		time.Now().Add(24*time.Hour))
+
+	c.SetCookie(cookie)
+	return c.String(http.StatusOK, "Registered!")
 }
 
 func (handler *MessengerHandler) login(c echo.Context) error {
@@ -62,6 +90,7 @@ func (handler *MessengerHandler) login(c echo.Context) error {
 
 	err := json.NewDecoder(c.Request().Body).Decode(&decoded)
 	if err != nil {
+		handler.log.Error("Bad request", zap.Error(err))
 		return c.String(http.StatusBadRequest, "No username or password")
 	}
 

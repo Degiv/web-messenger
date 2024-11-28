@@ -16,6 +16,18 @@ func NewUsers(DB *sqlx.DB) *Users {
 	}
 }
 
+func (u *Users) CreateUser(username string, email string, passwordHash string) (int64, error) {
+	const query = `INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id;`
+	row := u.DB.QueryRowx(query, &username, &email, &passwordHash)
+	var id int64
+	err := row.Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
 func (u *Users) GetUsersByIDs(userIDs []int64) ([]*domain.User, error) {
 	users := make([]*domain.User, 0)
 	err := u.DB.Select(&users, "SELECT * FROM users WHERE id = ANY ($1)", pq.Array(userIDs))

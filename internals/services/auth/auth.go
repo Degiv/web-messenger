@@ -29,7 +29,7 @@ func NewAuthService(users Users) *AuthService {
 
 func (service *AuthService) AuthorizeUser(username string, password string) (int64, error) {
 	user, err := service.Users.GetUserByUsername(username)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNoSuchUser
 	}
 

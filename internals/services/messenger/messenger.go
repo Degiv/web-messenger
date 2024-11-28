@@ -1,8 +1,11 @@
 package messenger
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"messenger/internals/domain"
+	"messenger/pkg/passwordhashing"
 	"time"
 )
 
@@ -18,8 +21,10 @@ type Messages interface {
 }
 
 type Users interface {
+	CreateUser(username string, email string, passwordHash string) (int64, error)
 	GetUsersByIDs(usersIDs []int64) ([]*domain.User, error)
 	GetUserByID(userID int64) (*domain.User, error)
+	GetUserByUsername(username string) (*domain.User, error)
 }
 
 type MessengerService struct {
@@ -79,4 +84,23 @@ func (service *MessengerService) CreateConference(usersIDs []int64, name string,
 	}
 
 	return nil
+}
+
+func (service *MessengerService) RegisterUser(username string, email string, password string) (bool, int64, error) {
+	_, err := service.Users.GetUserByUsername(username)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return false, 0, err
+	}
+
+	passwordHash, err := passwordhashing.HashPassword(password)
+	if err != nil {
+		return false, 0, err
+	}
+
+	id, err := service.Users.CreateUser(username, email, passwordHash)
+	if err != nil {
+		return false, 0, err
+	}
+
+	return true, id, nil
 }
