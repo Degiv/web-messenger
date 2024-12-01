@@ -54,7 +54,7 @@ func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("messenger/conferences", handler.getConferences)
 	e.POST("messenger/conferences", handler.createConference)
 
-	e.GET("messenger/users/{id}", handler.getUser)
+	e.GET("messenger/users/:id", handler.getUser)
 	return e
 }
 
@@ -115,12 +115,9 @@ func (handler *MessengerHandler) login(c echo.Context) error {
 }
 
 func (handler *MessengerHandler) getUser(c echo.Context) error {
-	cookie, err := c.Cookie(IDCookieKey)
-	if err != nil {
-		return err
-	}
+	userIDStr := c.Param("id")
 
-	userID, err := strconv.ParseInt(cookie.Value, 10, 64)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		handler.log.Error("Wrong ID type", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong ID type")
@@ -132,6 +129,7 @@ func (handler *MessengerHandler) getUser(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to get user")
 	}
 
+	user.PasswordHash = ""
 	return c.JSON(http.StatusOK, user)
 }
 
