@@ -18,7 +18,7 @@ func NewConferences(DB *sqlx.DB) *Conferences {
 
 func (c *Conferences) GetConferencesByUser(userID int64) ([]*domain.Conference, error) {
 	conferences := make([]*domain.Conference, 0)
-	const query = `SELECT * FROM conferences AS c 
+	const query = `SELECT id, name, created_by, created_at, last_message FROM conferences AS c 
     JOIN conference_members AS cm ON c.id = cm.conference_id
     WHERE cm.user_id = $1`
 	err := c.DB.Select(&conferences, query, userID)

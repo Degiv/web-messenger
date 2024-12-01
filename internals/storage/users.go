@@ -40,20 +40,20 @@ func (u *Users) GetUsersByIDs(userIDs []int64) ([]*domain.User, error) {
 
 func (u *Users) GetUserByID(userID int64) (*domain.User, error) {
 	const query = `SELECT * FROM users WHERE id = $1`
-	var user *domain.User
-	err := u.DB.Get(user, query, userID)
+	var user domain.User
+	err := u.DB.Get(&user, query, userID)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (u *Users) GetUserByUsername(username string) (*domain.User, error) {
 	const query = `SELECT * FROM users WHERE username = $1`
-	var user *domain.User
-	err := u.DB.Get(user, query, username)
+	var user domain.User
+	err := u.DB.Get(&user, query, username)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }

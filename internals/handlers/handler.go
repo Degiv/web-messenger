@@ -46,7 +46,7 @@ func NewMessengerHandler(messenger MessengerService, auth AuthService, log *zap.
 
 func (handler *MessengerHandler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("login", handler.login)
-	e.POST("signin", handler.signIn)
+	e.POST("signIn", handler.signIn)
 
 	e.GET("messenger/conferences/{id}", handler.getMessages)
 	e.POST("messenger/conferences/{id}", handler.postMessage)
@@ -69,7 +69,7 @@ func (handler *MessengerHandler) signIn(c echo.Context) error {
 	ok, id, err := handler.messenger.RegisterUser(decoded.Username, decoded.Email, decoded.Password)
 	if err != nil {
 		handler.log.Error("Failed to sign in", zap.Error(err))
-		return c.String(http.StatusInternalServerError, "ServerError")
+		return c.String(http.StatusInternalServerError, "Server Error")
 	}
 
 	if !ok {
@@ -169,7 +169,16 @@ func (handler *MessengerHandler) postMessage(c echo.Context) error {
 }
 
 func (handler *MessengerHandler) getConferences(c echo.Context) error {
-	userID, err := strconv.ParseInt(c.QueryParam("id"), 10, 64)
+	cookie, err := c.Cookie(IDCookieKey)
+	if err != nil {
+		return err
+	}
+
+	userID, err := strconv.ParseInt(cookie.Value, 10, 64)
+	if err != nil {
+		handler.log.Error("Wrong ID type", zap.Error(err))
+		return c.String(http.StatusBadRequest, "Wrong ID type")
+	}
 	if err != nil {
 		handler.log.Error("Wrong ID type", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong ID type")
