@@ -27,42 +27,42 @@ type Users interface {
 	GetUserByUsername(username string) (*domain.User, error)
 }
 
-type MessengerService struct {
+type Service struct {
 	Users       Users
 	Messages    Messages
 	Conferences Conferences
 }
 
-func NewMessenger(users Users, messages Messages, conferences Conferences) *MessengerService {
-	return &MessengerService{
+func NewMessenger(users Users, messages Messages, conferences Conferences) *Service {
+	return &Service{
 		Users:       users,
 		Messages:    messages,
 		Conferences: conferences,
 	}
 }
 
-func (service *MessengerService) GetUserByID(userID int64) (*domain.User, error) {
-	user, err := service.Users.GetUserByID(userID)
+func (s *Service) GetUserByID(userID int64) (*domain.User, error) {
+	user, err := s.Users.GetUserByID(userID)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (service *MessengerService) GetConferenceMessages(userID int64) ([]*domain.Message, error) {
-	return service.Messages.GetMessagesByConference(userID)
+func (s *Service) GetConferenceMessages(userID int64) ([]*domain.Message, error) {
+	return s.Messages.GetMessagesByConference(userID)
 }
 
-func (service *MessengerService) PostToConference(message *domain.Message) error {
-	return service.Messages.InsertMessage(message)
+func (s *Service) PostToConference(message *domain.Message) error {
+	return s.Messages.InsertMessage(message)
 }
 
-func (service *MessengerService) GetConferencesByUser(userID int64) ([]*domain.Conference, error) {
-	return service.Conferences.GetConferencesByUser(userID)
+func (s *Service) GetConferencesByUser(userID int64) ([]*domain.Conference, error) {
+	return s.Conferences.GetConferencesByUser(userID)
 }
 
-func (service *MessengerService) CreateConference(usersIDs []int64, name string, createdBy int64, createdAt time.Time) error {
-	users, err := service.Users.GetUsersByIDs(usersIDs)
+func (s *Service) CreateConference(usersIDs []int64, name string, createdBy int64, createdAt time.Time) error {
+	users, err := s.Users.GetUsersByIDs(usersIDs)
 	if err != nil {
 		return fmt.Errorf("validating users: %w", err)
 	}
@@ -71,13 +71,13 @@ func (service *MessengerService) CreateConference(usersIDs []int64, name string,
 		return fmt.Errorf("validating users: some users doesn't exist")
 	}
 
-	conferenceID, err := service.Conferences.CreateConference(name, createdBy, createdAt)
+	conferenceID, err := s.Conferences.CreateConference(name, createdBy, createdAt)
 	if err != nil {
 		return fmt.Errorf("creating conference: %w", err)
 	}
 
 	for _, userID := range usersIDs {
-		err = service.Conferences.CreateConferenceMember(userID, conferenceID, createdAt)
+		err = s.Conferences.CreateConferenceMember(userID, conferenceID, createdAt)
 		if err != nil {
 			return fmt.Errorf("creating usersConferencesRelation: %w", err)
 		}
@@ -86,8 +86,8 @@ func (service *MessengerService) CreateConference(usersIDs []int64, name string,
 	return nil
 }
 
-func (service *MessengerService) RegisterUser(username string, email string, password string) (bool, int64, error) {
-	_, err := service.Users.GetUserByUsername(username)
+func (s *Service) RegisterUser(username string, email string, password string) (bool, int64, error) {
+	_, err := s.Users.GetUserByUsername(username)
 	if !errors.Is(err, sql.ErrNoRows) {
 		return false, 0, err
 	}
@@ -97,10 +97,27 @@ func (service *MessengerService) RegisterUser(username string, email string, pas
 		return false, 0, err
 	}
 
-	id, err := service.Users.CreateUser(username, email, passwordHash)
+	id, err := s.Users.CreateUser(username, email, passwordHash)
 	if err != nil {
 		return false, 0, err
 	}
 
 	return true, id, nil
+}
+
+func (s *Service) VerifyConferenceMember(userID int64, conferenceID int64) (bool, error) {
+	conferences, err := s.Conferences.GetConferencesByUser(userID)
+	if err != nil {
+		return false, err
+	}
+
+	ok := false
+	for _, c := range conferences {
+		if c.ID == conferenceID {
+			ok = true
+			break
+		}
+	}
+
+	return ok, nil
 }
