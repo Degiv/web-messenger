@@ -17,18 +17,18 @@ type Users interface {
 	GetUserByUsername(username string) (*domain.User, error)
 }
 
-type AuthService struct {
+type Service struct {
 	Users Users
 }
 
-func NewAuthService(users Users) *AuthService {
-	return &AuthService{
+func NewAuthService(users Users) *Service {
+	return &Service{
 		Users: users,
 	}
 }
 
-func (service *AuthService) AuthorizeUser(username string, password string) (int64, error) {
-	user, err := service.Users.GetUserByUsername(username)
+func (s *Service) AuthorizeUser(username string, password string) (int64, error) {
+	user, err := s.Users.GetUserByUsername(username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNoSuchUser
 	}
