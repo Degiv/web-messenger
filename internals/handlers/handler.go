@@ -47,7 +47,7 @@ func NewMessengerHandler(messenger MessengerService, auth AuthService, log *zap.
 }
 
 func (h *Handler) RegisterRoutes(e *echo.Echo) *echo.Echo {
-	e.GET("login", h.login)
+	e.POST("login", h.login)
 	e.POST("signUp", h.signUp)
 
 	e.GET("messenger/conferences/:id", h.getMessages)
@@ -214,10 +214,6 @@ func (h *Handler) getConferences(c echo.Context) error {
 	}
 
 	userID, err := strconv.ParseInt(cookie.Value, 10, 64)
-	if err != nil {
-		h.log.Error("Wrong ID type", zap.Error(err))
-		return c.String(http.StatusBadRequest, "Wrong ID type")
-	}
 	if err != nil {
 		h.log.Error("Wrong ID type", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong ID type")
