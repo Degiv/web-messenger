@@ -8,6 +8,7 @@ import (
 	"messenger/internals/domain"
 	"messenger/internals/services/auth"
 	mycookie "messenger/pkg/cookie"
+	"messenger/pkg/pqErr"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,7 +19,7 @@ const (
 )
 
 type MessengerService interface {
-	RegisterUser(username string, email string, password string) (bool, int64, error)
+	RegisterUser(username string, email string, password string) (int64, error)
 	GetUserByID(userID int64) (*domain.User, error)
 	VerifyConferenceMember(userID int64, conferenceID int64) (bool, error)
 	GetConferenceMessages(conferenceID int64) ([]*domain.Message, error)
@@ -47,7 +48,7 @@ func NewMessengerHandler(messenger MessengerService, auth AuthService, log *zap.
 
 func (h *Handler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("login", h.login)
-	e.POST("signIn", h.signIn)
+	e.POST("signUp", h.signUp)
 
 	e.GET("messenger/conferences/:id", h.getMessages)
 	e.POST("messenger/conferences/:id", h.postMessage)
@@ -59,22 +60,22 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) *echo.Echo {
 	return e
 }
 
-func (h *Handler) signIn(c echo.Context) error {
-	var decoded signInRequest
+func (h *Handler) signUp(c echo.Context) error {
+	var decoded signUpRequest
 	err := json.NewDecoder(c.Request().Body).Decode(&decoded)
 	if err != nil {
 		h.log.Error("Bad request", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Wrong user data")
 	}
 
-	ok, id, err := h.messenger.RegisterUser(decoded.Username, decoded.Email, decoded.Password)
-	if err != nil {
-		h.log.Error("Failed to sign in", zap.Error(err))
-		return c.String(http.StatusInternalServerError, "Server Error")
-	}
+	id, err := h.messenger.RegisterUser(decoded.Username, decoded.Email, decoded.Password)
 
-	if !ok {
-		return c.String(http.StatusConflict, "Username already exists")
+	if err != nil {
+		if pqErr.IsUniqueViolatesError(err) {
+			return c.String(http.StatusConflict, "User with this login or email already exists")
+		} else {
+			return c.String(http.StatusInternalServerError, "Server error")
+		}
 	}
 
 	cookie := mycookie.CreateCookie(
@@ -96,14 +97,12 @@ func (h *Handler) login(c echo.Context) error {
 	}
 
 	userID, err := h.auth.AuthorizeUser(decoded.Username, decoded.Password)
-	if err != nil {
-		switch {
-		case errors.Is(err, auth.ErrNoSuchUser) || errors.Is(err, auth.ErrWrongPassword):
-			return c.String(http.StatusUnauthorized, "Wrong username or password")
-		default:
-			h.log.Error("Failed to authorize user", zap.Error(err))
-			return c.String(http.StatusInternalServerError, "Server error")
-		}
+	switch {
+	case errors.Is(err, auth.ErrNoSuchUser) || errors.Is(err, auth.ErrWrongPassword):
+		return c.String(http.StatusUnauthorized, "Wrong username or password")
+	case err != nil:
+		h.log.Error("Failed to authorize user", zap.Error(err))
+		return c.String(http.StatusInternalServerError, "Server error")
 	}
 
 	cookie := mycookie.CreateCookie(

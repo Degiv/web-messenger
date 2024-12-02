@@ -18,6 +18,7 @@ func NewUsers(DB *sqlx.DB) *Users {
 
 func (u *Users) CreateUser(username string, email string, passwordHash string) (int64, error) {
 	const query = `INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id;`
+
 	row := u.DB.QueryRowx(query, &username, &email, &passwordHash)
 	var id int64
 	err := row.Scan(&id)

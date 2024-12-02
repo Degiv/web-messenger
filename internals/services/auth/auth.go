@@ -34,7 +34,7 @@ func (s *Service) AuthorizeUser(username string, password string) (int64, error)
 	}
 
 	if err != nil {
-		return 0, fmt.Errorf("Get user by username: %w", err)
+		return 0, fmt.Errorf("get user by username: %w", err)
 	}
 
 	if !passwordhashing.VerifyPassword(password, user.PasswordHash) {

@@ -1,8 +1,6 @@
 package messenger
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 	"messenger/internals/domain"
 	"messenger/pkg/passwordhashing"
@@ -86,23 +84,18 @@ func (s *Service) CreateConference(usersIDs []int64, name string, createdBy int6
 	return nil
 }
 
-func (s *Service) RegisterUser(username string, email string, password string) (bool, int64, error) {
-	_, err := s.Users.GetUserByUsername(username)
-	if !errors.Is(err, sql.ErrNoRows) {
-		return false, 0, err
-	}
-
+func (s *Service) RegisterUser(username string, email string, password string) (int64, error) {
 	passwordHash, err := passwordhashing.HashPassword(password)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 
 	id, err := s.Users.CreateUser(username, email, passwordHash)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 
-	return true, id, nil
+	return id, nil
 }
 
 func (s *Service) VerifyConferenceMember(userID int64, conferenceID int64) (bool, error) {
