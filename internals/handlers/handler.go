@@ -172,14 +172,35 @@ func (h *Handler) getMessages(c echo.Context) error {
 }
 
 func (h *Handler) postMessage(c echo.Context) error {
-	var message *domain.Message
-	err := json.NewDecoder(c.Request().Body).Decode(message)
+	var message domain.Message
+	err := json.NewDecoder(c.Request().Body).Decode(&message)
 	if err != nil {
 		h.log.Error("Failed to parse message", zap.Error(err))
 		return c.String(http.StatusBadRequest, "Failed to post message: cannot parse message")
 	}
 
-	err = h.messenger.PostToConference(message)
+	userIDCookie, err := c.Cookie(IDCookieKey)
+	if err != nil {
+		h.log.Error("no cookie")
+		return c.String(http.StatusUnauthorized, "Need to login")
+	}
+
+	userID, err := strconv.ParseInt(userIDCookie.Value, 10, 64)
+	if err != nil {
+		h.log.Error("Failed to parse int from cookie", zap.Error(err))
+		return c.String(http.StatusBadRequest, "Wrong cookie type")
+	}
+
+	ok, err := h.messenger.VerifyConferenceMember(userID, message.ConferenceID)
+	if err != nil {
+		h.log.Error("Failed to verify conference member", zap.Error(err))
+		return c.String(http.StatusInternalServerError, "Server error")
+	}
+	if !ok {
+		return c.String(http.StatusUnauthorized, "You are not a member of conference")
+	}
+
+	err = h.messenger.PostToConference(&message)
 	if err != nil {
 		h.log.Error("Failed to post message to conference", zap.Error(err))
 		return c.String(http.StatusInternalServerError, "Failed to post message")

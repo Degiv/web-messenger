@@ -26,8 +26,7 @@ func (storage *MessagesStorage) GetMessagesByConference(id int64) ([]*domain.Mes
 }
 
 func (storage *MessagesStorage) InsertMessage(message *domain.Message) error {
-	_, err := storage.DB.Exec("INSERT INTO messages (id, conference_id, user_id, text, sent_at) VALUES ($1, $2, $3, $4, $5)",
-		message.ID,
+	_, err := storage.DB.Exec("INSERT INTO messages (conference_id, user_id, text, sent_at) VALUES ($1, $2, $3, $4)",
 		message.ConferenceID,
 		message.UserID,
 		message.Text,
