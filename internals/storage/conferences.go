@@ -1,18 +1,20 @@
 package storage
 
 import (
-	"github.com/jmoiron/sqlx"
-	"messenger/internals/domain"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+
+	"github.com/Degiv/web-messenger/internals/domain"
 )
 
 type Conferences struct {
 	DB *sqlx.DB
 }
 
-func NewConferences(DB *sqlx.DB) *Conferences {
+func NewConferences(db *sqlx.DB) *Conferences {
 	return &Conferences{
-		DB: DB,
+		DB: db,
 	}
 }
 

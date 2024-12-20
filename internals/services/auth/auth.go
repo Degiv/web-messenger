@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"messenger/internals/domain"
-	"messenger/pkg/passwordhashing"
+
+	"github.com/Degiv/web-messenger/internals/domain"
+	"github.com/Degiv/web-messenger/pkg/passwordhashing"
 )
 
 var (
-	ErrWrongPassword = errors.New("Wrong password")
-	ErrNoSuchUser    = errors.New("No such user")
+	ErrWrongPassword = errors.New("wrong password")
+	ErrNoSuchUser    = errors.New("no such user")
 )
 
 type Users interface {

@@ -2,9 +2,10 @@ package messenger
 
 import (
 	"fmt"
-	"messenger/internals/domain"
-	"messenger/pkg/passwordhashing"
 	"time"
+
+	"github.com/Degiv/web-messenger/internals/domain"
+	"github.com/Degiv/web-messenger/pkg/passwordhashing"
 )
 
 type Conferences interface {

@@ -2,16 +2,17 @@ package storage
 
 import (
 	"github.com/jmoiron/sqlx"
-	"messenger/internals/domain"
+
+	"github.com/Degiv/web-messenger/internals/domain"
 )
 
 type Messages struct {
 	DB *sqlx.DB
 }
 
-func NewMessages(DB *sqlx.DB) *Messages {
+func NewMessages(db *sqlx.DB) *Messages {
 	return &Messages{
-		DB: DB,
+		DB: db,
 	}
 }
 

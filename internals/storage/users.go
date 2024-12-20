@@ -3,16 +3,17 @@ package storage
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"messenger/internals/domain"
+
+	"github.com/Degiv/web-messenger/internals/domain"
 )
 
 type Users struct {
 	DB *sqlx.DB
 }
 
-func NewUsers(DB *sqlx.DB) *Users {
+func NewUsers(db *sqlx.DB) *Users {
 	return &Users{
-		DB: DB,
+		DB: db,
 	}
 }
 

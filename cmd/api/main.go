@@ -7,10 +7,11 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"messenger/internals/handlers"
-	"messenger/internals/services/auth"
-	"messenger/internals/services/messenger"
-	"messenger/internals/storage"
+
+	"github.com/Degiv/web-messenger/internals/handlers"
+	"github.com/Degiv/web-messenger/internals/services/auth"
+	"github.com/Degiv/web-messenger/internals/services/messenger"
+	"github.com/Degiv/web-messenger/internals/storage"
 )
 
 func NewLogger() *zap.Logger {
@@ -23,8 +24,11 @@ func NewLogger() *zap.Logger {
 
 func main() {
 	log := NewLogger()
-	defer log.Sync() // flushes buffer, if any
-	//logSugar := log.Sugar()
+	defer func() {
+		_ = log.Sync()
+	}()
+	// flushes buffer, if any
+	// logSugar := log.Sugar()
 
 	db, err := sqlx.Connect("postgres", "user=postgres password=postgres dbname=postgres sslmode=disable")
 	if err != nil {

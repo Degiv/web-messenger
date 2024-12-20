@@ -1,7 +1,8 @@
-package pqErr
+package pqerr
 
 import (
 	"errors"
+
 	"github.com/lib/pq"
 )
 

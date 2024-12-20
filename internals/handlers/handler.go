@@ -3,15 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
-	"messenger/internals/domain"
-	"messenger/internals/services/auth"
-	mycookie "messenger/pkg/cookie"
-	"messenger/pkg/pqErr"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
+	"github.com/Degiv/web-messenger/internals/domain"
+	"github.com/Degiv/web-messenger/internals/services/auth"
+	mycookie "github.com/Degiv/web-messenger/pkg/cookie"
+	"github.com/Degiv/web-messenger/pkg/pqerr"
 )
 
 const (
@@ -71,17 +73,18 @@ func (h *Handler) signUp(c echo.Context) error {
 	id, err := h.messenger.RegisterUser(decoded.Username, decoded.Email, decoded.Password)
 
 	if err != nil {
-		if pqErr.IsUniqueViolatesError(err) {
+		if pqerr.IsUniqueViolatesError(err) {
 			return c.String(http.StatusConflict, "User with this login or email already exists")
-		} else {
-			return c.String(http.StatusInternalServerError, "Server error")
 		}
+
+		return c.String(http.StatusInternalServerError, "Server error")
 	}
 
+	const hoursNumber = 24
 	cookie := mycookie.CreateCookie(
 		IDCookieKey,
 		strconv.FormatInt(id, 10),
-		time.Now().Add(24*time.Hour))
+		time.Now().Add(hoursNumber*time.Hour))
 
 	c.SetCookie(cookie)
 	return c.String(http.StatusOK, "Registered!")
@@ -105,10 +108,11 @@ func (h *Handler) login(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Server error")
 	}
 
+	const hoursNumber = 24
 	cookie := mycookie.CreateCookie(
 		IDCookieKey,
 		strconv.FormatInt(userID, 10),
-		time.Now().Add(24*time.Hour))
+		time.Now().Add(hoursNumber*time.Hour))
 
 	c.SetCookie(cookie)
 	return c.String(http.StatusOK, "Authorized!")
