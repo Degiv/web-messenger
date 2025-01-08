@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os"
 
 	"github.com/Degiv/web-messenger/internals/handlers"
 	"github.com/Degiv/web-messenger/internals/services/auth"
@@ -30,9 +31,10 @@ func main() {
 	// flushes buffer, if any
 	// logSugar := log.Sugar()
 
-	db, err := sqlx.Connect("postgres", "user=postgres password=postgres dbname=postgres sslmode=disable")
+	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Error("Failed connect to database", zap.Error(err))
+		panic("")
 	}
 
 	users := storage.NewUsers(db)
